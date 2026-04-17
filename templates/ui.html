@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Recommendation System</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; background: #f0efe9; color: #1a1a1a; font-size: 15px; }
+    header {
+      background: #1a1a2e;
+      color: #e8e8e0;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 3px solid #c8960c;
+    }
+    .header-icon {
+      width: 32px; height: 32px;
+      background: #c8960c;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    header h1 { font-size: 19px; font-weight: normal; letter-spacing: 0.5px; }
+    header span { font-size: 12px; color: #aaa; margin-left: auto; }
+    .layout { display: flex; min-height: calc(100vh - 61px); }
+    nav {
+      width: 210px;
+      background: #ffffff;
+      border-right: 1px solid #e0ddd4;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+    nav .nav-group-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #aaa;
+      padding: 6px 18px 4px;
+      margin-top: 4px;
+    }
+    nav a {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 18px;
+      color: #444;
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    nav a .dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+    nav a:hover { background: #fdf6e3; border-left-color: #c8960c; color: #7a5c00; }
+    nav a:hover .dot { background: #c8960c; }
+    nav a.active { background: #eef2ff; border-left-color: #3a3aaa; color: #1a1a2e; font-weight: bold; }
+    nav a.active .dot { background: #3a3aaa; }
+    main { flex: 1; padding: 28px 32px; overflow-y: auto; background: #f0efe9; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 0.5px solid #ddd;
+      padding: 22px 24px;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: normal;
+      color: #1a1a2e;
+      border-bottom: 2px solid #c8960c;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      max-width: 580px;
+      margin-bottom: 14px;
+    }
+    label { display: block; font-size: 11.5px; color: #777; margin-bottom: 4px; letter-spacing: 0.2px; }
+    input, select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      font-size: 13.5px;
+      font-family: Georgia, serif;
+      color: #1a1a1a;
+      outline: none;
+      border-radius: 4px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    input:focus, select:focus { border-color: #3a3aaa; background: #f8f8ff; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 18px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      font-size: 13.5px;
+      font-family: Georgia, serif;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #3a3aaa; }
+    .btn-sm {
+      padding: 4px 12px;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+    .btn-danger { background: #8b1a1a; }
+    .btn-danger:hover { background: #b00020; }
+    .btn-load { margin-bottom: 14px; }
+    .msg { margin-top: 10px; font-size: 13px; color: #2a7a2a; min-height: 18px; }
+    .msg.error { color: #b00020; }
+    .table-wrap { overflow-x: auto; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13.5px; border-radius: 6px; overflow: hidden; }
+    th {
+      background: #1a1a2e;
+      color: #e8e8e0;
+      text-align: left;
+      padding: 9px 14px;
+      font-weight: normal;
+      font-size: 12.5px;
+      letter-spacing: 0.3px;
+    }
+    td { padding: 7px 14px; border-bottom: 1px solid #eee; color: #333; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f9f9ff; }
+    tr:hover td { background: #fdf6e3; }
+    .empty { color: #888; font-size: 13px; padding: 14px 0; }
+    .recommend-row { display: flex; gap: 10px; align-items: flex-end; max-width: 300px; margin-bottom: 18px; }
+    .recommend-row > div { flex: 1; }
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      background: #eef2ff;
+      color: #3a3aaa;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-icon">🎬</div>
+  <h1>Movie Recommendation System</h1>
+  <span>Analytics Dashboard</span>
+</header>
+<div class="layout">
+  <nav>
+    <div class="nav-group-label">Analytics</div>
+    <a onclick="show('top-movies')" id="nav-top-movies" class="active"><span class="dot"></span>Top Rated Movies</a>
+    <a onclick="show('genres')" id="nav-genres"><span class="dot"></span>Popular Genres</a>
+    <a onclick="show('trending')" id="nav-trending"><span class="dot"></span>Trending</a>
+    <a onclick="show('recommend')" id="nav-recommend"><span class="dot"></span>Recommendations</a>
+    <a onclick="show('activity')" id="nav-activity"><span class="dot"></span>User Activity</a>
+    <div class="nav-group-label" style="margin-top:10px;">Data</div>
+    <a onclick="show('movies')" id="nav-movies"><span class="dot"></span>All Movies</a>
+    <a onclick="show('users')" id="nav-users"><span class="dot"></span>All Users</a>
+    <a onclick="show('ratings')" id="nav-ratings"><span class="dot"></span>All Ratings</a>
+    <div class="nav-group-label" style="margin-top:10px;">Add</div>
+    <a onclick="show('add-user')" id="nav-add-user"><span class="dot"></span>Add User</a>
+    <a onclick="show('add-movie')" id="nav-add-movie"><span class="dot"></span>Add Movie</a>
+    <a onclick="show('add-rating')" id="nav-add-rating"><span class="dot"></span>Add Rating</a>
+    <a onclick="show('add-watch')" id="nav-add-watch"><span class="dot"></span>Add Watch</a>
+  </nav>
+  <main>
+    <div id="section-top-movies" class="section active">
+      <div class="section-card">
+        <h2>Top Rated Movies</h2>
+        <button class="btn btn-load" onclick="load('top-movies')">Load</button>
+        <div class="table-wrap" id="tbl-top-movies"></div>
+      </div>
+    </div>
+    <div id="section-genres" class="section">
+      <div class="section-card">
+        <h2>Popular Genres</h2>
+        <button class="btn btn-load" onclick="load('genres')">Load</button>
+        <div class="table-wrap" id="tbl-genres"></div>
+      </div>
+    </div>
+    <div id="section-trending" class="section">
+      <div class="section-card">
+        <h2>Trending <span class="badge">Last 7 Days</span></h2>
+        <button class="btn btn-load" onclick="load('trending')">Load</button>
+        <div class="table-wrap" id="tbl-trending"></div>
+      </div>
+    </div>
+    <div id="section-recommend" class="section">
+      <div class="section-card">
+        <h2>Recommendations for User</h2>
+        <div class="recommend-row">
+          <div><label>User ID</label><input type="number" id="rec-uid" placeholder="e.g. 1" min="1"/></div>
+          <button class="btn" onclick="loadRecommend()">Get</button>
+        </div>
+        <div class="table-wrap" id="tbl-recommend"></div>
+      </div>
+    </div>
+    <div id="section-activity" class="section">
+      <div class="section-card">
+        <h2>User Activity</h2>
+        <button class="btn btn-load" onclick="load('activity')">Load</button>
+        <div class="table-wrap" id="tbl-activity"></div>
+      </div>
+    </div>
+    <div id="section-movies" class="section">
+      <div class="section-card">
+        <h2>All Movies</h2>
+        <button class="btn btn-load" onclick="loadMovies()">Load</button>
+        <div class="table-wrap" id="tbl-movies"></div>
+      </div>
+    </div>
+    <div id="section-users" class="section">
+      <div class="section-card">
+        <h2>All Users</h2>
+        <button class="btn btn-load" onclick="loadUsers()">Load</button>
+        <div class="table-wrap" id="tbl-users"></div>
+      </div>
+    </div>
+    <div id="section-ratings" class="section">
+      <div class="section-card">
+        <h2>All Ratings</h2>
+        <button class="btn btn-load" onclick="loadRatings()">Load</button>
+        <div class="table-wrap" id="tbl-ratings"></div>
+      </div>
+    </div>
+    <div id="section-add-user" class="section">
+      <div class="section-card">
+        <h2>Add User</h2>
+        <div class="form-grid">
+          <div><label>Name</label><input type="text" id="u-name" placeholder="Full name"/></div>
+          <div><label>Age</label><input type="number" id="u-age" placeholder="Age" min="1"/></div>
+        </div>
+        <button class="btn" onclick="addUser()">Add User</button>
+        <div class="msg" id="msg-user"></div>
+      </div>
+    </div>
+    <div id="section-add-movie" class="section">
+      <div class="section-card">
+        <h2>Add Movie</h2>
+        <div class="form-grid">
+          <div><label>Title</label><input type="text" id="m-title" placeholder="Movie title"/></div>
+          <div><label>Genre</label><input type="text" id="m-genre" placeholder="e.g. Drama"/></div>
+        </div>
+        <button class="btn" onclick="addMovie()">Add Movie</button>
+        <div class="msg" id="msg-movie"></div>
+      </div>
+    </div>
+    <div id="section-add-rating" class="section">
+      <div class="section-card">
+        <h2>Add Rating</h2>
+        <div class="form-grid">
+          <div><label>User ID</label><input type="number" id="r-uid" placeholder="User ID" min="1"/></div>
+          <div><label>Movie ID</label><input type="number" id="r-mid" placeholder="Movie ID" min="1"/></div>
+          <div><label>Rating (1–5)</label><input type="number" id="r-rating" placeholder="e.g. 4.5" min="1" max="5" step="0.1"/></div>
+        </div>
+        <button class="btn" onclick="addRating()">Submit Rating</button>
+        <div class="msg" id="msg-rating"></div>
+      </div>
+    </div>
+    <div id="section-add-watch" class="section">
+      <div class="section-card">
+        <h2>Add Watch History</h2>
+        <div class="form-grid">
+          <div><label>User ID</label><input type="number" id="w-uid" placeholder="User ID" min="1"/></div>
+          <div><label>Movie ID</label><input type="number" id="w-mid" placeholder="Movie ID" min="1"/></div>
+          <div><label>Watch Date</label><input type="date" id="w-date"/></div>
+        </div>
+        <button class="btn" onclick="addWatch()">Add Entry</button>
+        <div class="msg" id="msg-watch"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  function show(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+  }
+
+  function renderTable(containerId, data, actions) {
+    const el = document.getElementById(containerId);
+    if (!data || data.length === 0) { el.innerHTML = '<p class="empty">No data found.</p>'; return; }
+    const keys = Object.keys(data[0]);
+    let html = '<table><thead><tr>';
+    keys.forEach(k => html += `<th>${k.replace(/_/g,' ')}</th>`);
+    if (actions) html += '<th>Action</th>';
+    html += '</tr></thead><tbody>';
+    data.forEach(row => {
+      html += '<tr>';
+      keys.forEach(k => {
+        let val = row[k] ?? '';
+        if (k === 'avg_rating' && val !== '') val = parseFloat(val).toFixed(2);
+        html += `<td>${val}</td>`;
+      });
+      if (actions) html += `<td>${actions(row)}</td>`;
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  const endpointMap = {
+    'top-movies': ['/api/top-movies', 'tbl-top-movies'],
+    'genres':     ['/api/popular-genres', 'tbl-genres'],
+    'trending':   ['/api/trending', 'tbl-trending'],
+    'activity':   ['/api/user-activity', 'tbl-activity'],
+  };
+
+  async function load(key) {
+    const [url, tbl] = endpointMap[key];
+    document.getElementById(tbl).innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      renderTable(tbl, data);
+    } catch { document.getElementById(tbl).innerHTML = '<p class="empty error">Failed to load.</p>'; }
+  }
+
+  async function loadMovies() {
+    document.getElementById('tbl-movies').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const res = await fetch('/api/movies');
+      const data = await res.json();
+      renderTable('tbl-movies', data, row =>
+        `<button class="btn btn-sm btn-danger" onclick="deleteMovie(${row.movie_id})">Delete</button>`
+      );
+    } catch { document.getElementById('tbl-movies').innerHTML = '<p class="empty error">Failed to load.</p>'; }
+  }
+
+  async function loadUsers() {
+    document.getElementById('tbl-users').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      renderTable('tbl-users', data, row =>
+        `<button class="btn btn-sm btn-danger" onclick="deleteUser(${row.user_id})">Delete</button>`
+      );
+    } catch { document.getElementById('tbl-users').innerHTML = '<p class="empty error">Failed to load.</p>'; }
+  }
+
+  async function loadRatings() {
+    document.getElementById('tbl-ratings').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const res = await fetch('/api/ratings');
+      const data = await res.json();
+      renderTable('tbl-ratings', data, row =>
+        `<button class="btn btn-sm btn-danger" onclick="deleteRating(${row.user_id},${row.movie_id})">Delete</button>`
+      );
+    } catch { document.getElementById('tbl-ratings').innerHTML = '<p class="empty error">Failed to load.</p>'; }
+  }
+
+  async function deleteMovie(id) {
+    if (!confirm(`Delete movie ID ${id}?`)) return;
+    await fetch(`/api/delete-movie/${id}`, { method: 'DELETE' });
+    loadMovies();
+  }
+
+  async function deleteUser(id) {
+    if (!confirm(`Delete user ID ${id}? This also removes their ratings and watch history.`)) return;
+    await fetch(`/api/delete-user/${id}`, { method: 'DELETE' });
+    loadUsers();
+  }
+
+  async function deleteRating(uid, mid) {
+    if (!confirm(`Delete rating by user ${uid} for movie ${mid}?`)) return;
+    await fetch(`/api/delete-rating/${uid}/${mid}`, { method: 'DELETE' });
+    loadRatings();
+  }
+
+  async function loadRecommend() {
+    const uid = document.getElementById('rec-uid').value.trim();
+    if (!uid) { alert('Please enter a User ID.'); return; }
+    document.getElementById('tbl-recommend').innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const res = await fetch(`/api/recommend/${uid}`);
+      const data = await res.json();
+      renderTable('tbl-recommend', data);
+    } catch { document.getElementById('tbl-recommend').innerHTML = '<p class="empty">Failed to load.</p>'; }
+  }
+
+  async function addUser() {
+    const name = document.getElementById('u-name').value.trim();
+    const age  = document.getElementById('u-age').value.trim();
+    const msg  = document.getElementById('msg-user');
+    msg.className = 'msg';
+    if (!name || !age) { msg.textContent = 'Please fill in all fields.'; msg.className = 'msg error'; return; }
+    try {
+      const res = await fetch('/api/add-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, age: parseInt(age)}) });
+      const data = await res.json();
+      if (data.success) { msg.textContent = `User added. ID: ${data.user_id}`; document.getElementById('u-name').value=''; document.getElementById('u-age').value=''; }
+      else { msg.textContent = data.error || 'Failed.'; msg.className = 'msg error'; }
+    } catch { msg.textContent = 'Network error.'; msg.className = 'msg error'; }
+  }
+
+  async function addMovie() {
+    const title = document.getElementById('m-title').value.trim();
+    const genre = document.getElementById('m-genre').value.trim();
+    const msg   = document.getElementById('msg-movie');
+    msg.className = 'msg';
+    if (!title || !genre) { msg.textContent = 'Please fill in all fields.'; msg.className = 'msg error'; return; }
+    try {
+      const res = await fetch('/api/add-movie', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, genre}) });
+      const data = await res.json();
+      if (data.success) { msg.textContent = `Movie added. ID: ${data.movie_id}`; document.getElementById('m-title').value=''; document.getElementById('m-genre').value=''; }
+      else { msg.textContent = data.error || 'Failed.'; msg.className = 'msg error'; }
+    } catch { msg.textContent = 'Network error.'; msg.className = 'msg error'; }
+  }
+
+  async function addRating() {
+    const uid = document.getElementById('r-uid').value.trim();
+    const mid = document.getElementById('r-mid').value.trim();
+    const rating = document.getElementById('r-rating').value.trim();
+    const msg = document.getElementById('msg-rating');
+    msg.className = 'msg';
+    if (!uid || !mid || !rating) { msg.textContent = 'Please fill in all fields.'; msg.className = 'msg error'; return; }
+    if (parseFloat(rating) < 1 || parseFloat(rating) > 5) { msg.textContent = 'Rating must be between 1 and 5.'; msg.className = 'msg error'; return; }
+    try {
+      const res = await fetch('/api/add-rating', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: parseInt(uid), movie_id: parseInt(mid), rating: parseFloat(rating)}) });
+      const data = await res.json();
+      if (data.success) { msg.textContent = 'Rating submitted.'; document.getElementById('r-uid').value=''; document.getElementById('r-mid').value=''; document.getElementById('r-rating').value=''; }
+      else { msg.textContent = data.error || 'Failed.'; msg.className = 'msg error'; }
+    } catch { msg.textContent = 'Network error.'; msg.className = 'msg error'; }
+  }
+
+  async function addWatch() {
+    const uid  = document.getElementById('w-uid').value.trim();
+    const mid  = document.getElementById('w-mid').value.trim();
+    const date = document.getElementById('w-date').value;
+    const msg  = document.getElementById('msg-watch');
+    msg.className = 'msg';
+    if (!uid || !mid || !date) { msg.textContent = 'Please fill in all fields.'; msg.className = 'msg error'; return; }
+    try {
+      const res = await fetch('/api/add-watch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: parseInt(uid), movie_id: parseInt(mid), watch_date: date}) });
+      const data = await res.json();
+      if (data.success) { msg.textContent = 'Watch history entry added.'; document.getElementById('w-uid').value=''; document.getElementById('w-mid').value=''; document.getElementById('w-date').value=''; }
+      else { msg.textContent = data.error || 'Failed.'; msg.className = 'msg error'; }
+    } catch { msg.textContent = 'Network error.'; msg.className = 'msg error'; }
+  }
+
+  load('top-movies');
+</script>
+</body>
+</html>
